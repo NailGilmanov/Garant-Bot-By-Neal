@@ -5,7 +5,7 @@ from aiogram import executor
 from handlers import client, admin, other
 
 client.register_handlers_client(dp)
-# admin.register_handlers_admin(dp)
+admin.register_handlers_admin(dp)
 
 #log level
 logging.basicConfig(level=logging.INFO)
