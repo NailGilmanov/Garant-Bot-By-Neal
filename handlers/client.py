@@ -3,6 +3,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram import types, Dispatcher
 from create_bot import bot
 from keys import kb_client
+from data_base import sqlite_db
+import sqlite3 as sq
 
 
 class FSMMakeDeal(StatesGroup):
@@ -17,6 +19,13 @@ async def start_deal(message: types.Message):
     await FSMMakeDeal.des.set()
     await message.reply("Отправь описание товара")
 
+# Выход из состояния
+async def cancel_handler(message: types.Message, state: FSMContext):
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    await state.finish()
+    await message.reply("Создание сделки было отменено.")
 
 # @dp.message_handler(state=FSMMakeDeal.des)
 async def set_des(message: types.Message, state: FSMMakeDeal):
@@ -78,11 +87,35 @@ async def set_id_of_deal(message: types.Message, state: FSMEnterDeal):
 
 # /start, /help
 async def greeting(message: types.Message):
-    await bot.send_message(
-        message.from_user.id,
-        "Привет! Я гарант бот и могу помогать тебе безопасно проводить сделки. Читай информацию и можешь начинать работать со мной!",
-        reply_markup=kb_client
-    )
+    already_register = False
+    state = {
+        "id": str(message.from_user.id),
+        "usd": "0",
+        "rub": "0",
+        "usdt": "0",
+        "ton": "0",
+        "btc": "0",
+        "eth": "0",
+        "bnb": "0",
+        "busd": "0",
+        "usdc": "0"
+    }
+    try:
+        await sqlite_db.sql_add_user_command(state)
+    except sq.IntegrityError:
+        already_register = True
+        await bot.send_message(
+            message.from_user.id,
+            "Вы уже зарегистрированы! \nМожете проверить свой баналс нажав на одну из соотвествующих кнопок",
+            reply_markup=kb_client
+        )
+
+    if not already_register:
+        await bot.send_message(
+            message.from_user.id,
+            "Привет! Я гарант бот и могу помогать тебе безопасно проводить сделки. Читай информацию и можешь начинать работать со мной!",
+            reply_markup=kb_client
+        )
 
 
 # /price
@@ -104,6 +137,9 @@ async def faq(message: types.Message):
 def register_handlers_client(dp: Dispatcher):
     # создание услуги
     dp.register_message_handler(start_deal, commands=["Создать_сделку"], state=None)
+    # Выход из состояния
+    dp.register_message_handler(cancel_handler, state="*", commands="Отмена")
+
     dp.register_message_handler(set_des, state=FSMMakeDeal.des)
     dp.register_message_handler(set_val, state=FSMMakeDeal.val)
     dp.register_message_handler(set_price, state=FSMMakeDeal.price)
@@ -115,6 +151,6 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(set_id_of_deal, state=FSMEnterDeal.id_of_deal)
 
     # прочее
-    dp.register_message_handler(greeting, commands=["start", "help"])
+    dp.register_message_handler(greeting, commands=["start"])
     dp.register_message_handler(price, commands=["Стоимость_услуг"])
     dp.register_message_handler(faq, commands=["Помощь(FAQ)"])
