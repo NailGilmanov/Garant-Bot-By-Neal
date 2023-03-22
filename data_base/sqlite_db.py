@@ -34,3 +34,11 @@ async def add_to_balance(id, val, amount):
         last_amount = ret[0]
     cur.execute(f'UPDATE users SET {val} = {str(float(last_amount) + float(amount))} WHERE id == {id}')
     base.commit()
+
+
+async def remove_from_balance(id, val, amount):
+    last_amount = ''
+    for ret in cur.execute(f"SELECT {val} FROM users WHERE id == {id}").fetchall():
+        last_amount = ret[0]
+    cur.execute(f'UPDATE users SET {val} = {str(float(last_amount) - float(amount))} WHERE id == {id}')
+    base.commit()
