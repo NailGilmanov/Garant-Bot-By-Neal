@@ -1,4 +1,5 @@
 import sqlite3 as sq
+from create_bot import bot
 
 
 def sql_start():
@@ -8,9 +9,20 @@ def sql_start():
     if base:
         print('Users data base connected OK.')
     base.execute('CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, usd TEXT, rub TEXT, usdt TEXT, ton TEXT, btc TEXT, eth TEXT, bnb TEXT, busd TEXT, usdc TEXT)')
+    # base.execute('CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, usd TEXT, rub TEXT)')
     base.commit()
 
 
 async def sql_add_user_command(state):
     cur.execute('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', tuple(state.values()))
     base.commit()
+
+
+async def sql_get_balance(message):
+    for ret in cur.execute(f"SELECT * FROM users WHERE id == {message.from_user.id}").fetchall():
+        await bot.send_message(message.from_user.id, f"Пользователь: \n{message.from_user.username} [{message.from_user.id}]\n\nБаланс:\nUSD: {ret[1]}\nRUB: {ret[2]}\nUSDT: {ret[3]}\nTON: {ret[4]}\nBTC: {ret[5]}\nETH: {ret[6]}\nBNB:{ret[7]}\nBUSD: {ret[8]}\nUSDC: {ret[9]}")
+
+
+async def sql_get_user_balance(id, name):
+    for ret in cur.execute(f"SELECT * FROM users WHERE id == {id}").fetchall():
+        await bot.send_message(id, f"Пользователь: \n{name} [{id}]\n\nБаланс:\nUSD: {ret[1]}\nRUB: {ret[2]}\nUSDT: {ret[3]}\nTON: {ret[4]}\nBTC: {ret[5]}\nETH: {ret[6]}\nBNB:{ret[7]}\nBUSD: {ret[8]}\nUSDC: {ret[9]}")

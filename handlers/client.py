@@ -117,6 +117,8 @@ async def greeting(message: types.Message):
             reply_markup=kb_client
         )
 
+async def check_balance(message: types.Message):
+    await sqlite_db.sql_get_balance(message)
 
 # /price
 async def price(message: types.Message):
@@ -154,3 +156,5 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(greeting, commands=["start"])
     dp.register_message_handler(price, commands=["Стоимость_услуг"])
     dp.register_message_handler(faq, commands=["Помощь(FAQ)"])
+
+    dp.register_message_handler(check_balance, commands=["Баланс"])
