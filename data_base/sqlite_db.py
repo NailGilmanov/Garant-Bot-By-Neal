@@ -1,5 +1,6 @@
 import sqlite3 as sq
 from create_bot import bot
+from datetime import datetime
 
 
 def sql_start():
@@ -9,12 +10,22 @@ def sql_start():
     if base:
         print('Users data base connected OK.')
     base.execute('CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, usd TEXT, rub TEXT, usdt TEXT, ton TEXT, btc TEXT, eth TEXT, bnb TEXT, busd TEXT, usdc TEXT)')
+    base.execute('CREATE TABLE IF NOT EXISTS deals(id TEXT PRIMARY KEY, description TEXT, val TEXT, price TEXT, founder TEXT, buyer TEXT, login TEXT, password TEXT, datetime TEXT)')
     # base.execute('CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, usd TEXT, rub TEXT)')
     base.commit()
 
 
 async def sql_add_user_command(state):
     cur.execute('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', tuple(state.values()))
+    base.commit()
+
+
+async def sql_add_deal_command(state, message):
+    curr = datetime.now()
+    dt = f'{curr.hour}{curr.minute}{curr.day}{curr.month}{curr.year}'
+    id = message.from_user.id
+    id_of_deal = str(id) + str(dt)
+    cur.execute(f'INSERT INTO deals VALUES ({id_of_deal}, ?, ?, ?, {id}, ?, ?, ?, {str(dt)})', tuple(state.values()))
     base.commit()
 
 

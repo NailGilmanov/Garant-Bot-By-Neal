@@ -11,13 +11,16 @@ class FSMMakeDeal(StatesGroup):
     des = State()
     val = State()
     price = State()
+    id_of_buyer = State()
     login = State()
     password = State()
+
 
 # @dp.message_handler(commands='Создать_сделку', state=None)
 async def start_deal(message: types.Message):
     await FSMMakeDeal.des.set()
     await message.reply("Отправь описание товара")
+
 
 # Выход из состояния
 async def cancel_handler(message: types.Message, state: FSMContext):
@@ -27,41 +30,52 @@ async def cancel_handler(message: types.Message, state: FSMContext):
     await state.finish()
     await message.reply("Создание сделки было отменено.")
 
+
 # @dp.message_handler(state=FSMMakeDeal.des)
-async def set_des(message: types.Message, state: FSMMakeDeal):
+async def set_des(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Description'] = message.text
     await FSMMakeDeal.next()
     await message.reply("Введи чем вы будете оплачивать? \nНапример, usd, rub, usdt, ton, btc, eth, bnb, busd, usdc")
 
 
-async def set_val(message: types.Message, state: FSMMakeDeal):
+async def set_val(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Valute'] = message.text
     await FSMMakeDeal.next()
     await message.reply("Введите цену\nНапример, 100")
 
 
-async def set_price(message: types.Message, state: FSMMakeDeal):
+async def set_price(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Price'] = message.text
+    await FSMMakeDeal.next()
+    await message.reply("Введите ID покупателя")
+
+
+async def set_buyer(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['BuyerID'] = message.text
     await FSMMakeDeal.next()
     await message.reply("Введите логин продаваемого аккаунта")
 
 
-async def set_login(message: types.Message, state: FSMMakeDeal):
+async def set_login(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Login'] = message.text
     await FSMMakeDeal.next()
     await message.reply("Введите пароль продаваемого аккаунта")
 
 
-async def set_password(message: types.Message, state: FSMMakeDeal):
+async def set_password(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Password'] = message.text
 
     async with state.proxy() as data:
         await message.reply(str(data))
+
+    await sqlite_db.sql_add_deal_command(data, message)
+
     await state.finish()
 
 
@@ -76,7 +90,7 @@ async def start_enter(message: types.Message):
 
 
 # @dp.message_handler(state=FSMMakeDeal.des)
-async def set_id_of_deal(message: types.Message, state: FSMEnterDeal):
+async def set_id_of_deal(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['id_of_deal'] = message.text
 
@@ -145,6 +159,7 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(set_des, state=FSMMakeDeal.des)
     dp.register_message_handler(set_val, state=FSMMakeDeal.val)
     dp.register_message_handler(set_price, state=FSMMakeDeal.price)
+    dp.register_message_handler(set_buyer, state=FSMMakeDeal.id_of_buyer)
     dp.register_message_handler(set_login, state=FSMMakeDeal.login)
     dp.register_message_handler(set_password, state=FSMMakeDeal.password)
 
