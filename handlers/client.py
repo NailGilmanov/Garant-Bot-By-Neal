@@ -5,13 +5,13 @@ from create_bot import bot
 from keys import kb_client
 from data_base import sqlite_db
 import sqlite3 as sq
+from datetime import datetime
 
 
 class FSMMakeDeal(StatesGroup):
     des = State()
     val = State()
     price = State()
-    id_of_buyer = State()
     login = State()
     password = State()
 
@@ -50,13 +50,6 @@ async def set_price(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Price'] = message.text
     await FSMMakeDeal.next()
-    await message.reply("Введите ID покупателя")
-
-
-async def set_buyer(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['BuyerID'] = message.text
-    await FSMMakeDeal.next()
     await message.reply("Введите логин продаваемого аккаунта")
 
 
@@ -71,16 +64,31 @@ async def set_password(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Password'] = message.text
 
-    async with state.proxy() as data:
-        await message.reply(str(data))
+    curr = datetime.now()
 
-    await sqlite_db.sql_add_deal_command(data, message)
+    hour = curr.hour
+    minute = curr.minute
+    day = curr.day
+    month = curr.month
+
+    if curr.hour <= 9: hour = f'0{curr.hour}'
+    if curr.minute <= 9: minute = f'0{curr.minute}'
+    if curr.day <= 9: day = f'0{curr.day}'
+    if curr.month <= 9: month = f'0{curr.month}'
+
+    dt = f'{hour}{minute}{day}{month}{curr.year}'
+
+    async with state.proxy() as data:
+        await message.reply(f'Сделка [{str(message.from_user.id) + str(dt)}] успешно создана!\nПередайте покупателю ID сделки для завершения операции')
+
+    await sqlite_db.sql_add_deal_command(data, message, dt)
 
     await state.finish()
 
 
 class FSMEnterDeal(StatesGroup):
     id_of_deal = State()
+    agree = State()
 
 
 # @dp.message_handler(commands='Создать_сделку', state=None)
@@ -89,13 +97,24 @@ async def start_enter(message: types.Message):
     await message.reply("Отправь айди сделки")
 
 
-# @dp.message_handler(state=FSMMakeDeal.des)
 async def set_id_of_deal(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['id_of_deal'] = message.text
+    await sqlite_db.sql_get_deal(message, data['id_of_deal'])
+    await FSMEnterDeal.next()
+    await message.reply("Войти в сделку?\nВведите ДА или НЕТ")
 
+
+# @dp.message_handler(state=FSMMakeDeal.des)
+async def set_agree(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        await message.reply(str(data))
+        data['agree'] = message.text
+
+    if data['agree'].lower() == 'нет':
+        await message.reply("Сделка была отменена")
+    else:
+        await sqlite_db.start_deal(message, data['id_of_deal'])
+
     await state.finish()
 
 
@@ -131,8 +150,10 @@ async def greeting(message: types.Message):
             reply_markup=kb_client
         )
 
+
 async def check_balance(message: types.Message):
     await sqlite_db.sql_get_balance(message)
+
 
 # /price
 async def price(message: types.Message):
@@ -159,13 +180,13 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(set_des, state=FSMMakeDeal.des)
     dp.register_message_handler(set_val, state=FSMMakeDeal.val)
     dp.register_message_handler(set_price, state=FSMMakeDeal.price)
-    dp.register_message_handler(set_buyer, state=FSMMakeDeal.id_of_buyer)
     dp.register_message_handler(set_login, state=FSMMakeDeal.login)
     dp.register_message_handler(set_password, state=FSMMakeDeal.password)
 
     # вход в услугу
     dp.register_message_handler(start_enter, commands=["Войти_в_сделку"], state=None)
     dp.register_message_handler(set_id_of_deal, state=FSMEnterDeal.id_of_deal)
+    dp.register_message_handler(set_agree, state=FSMEnterDeal.agree)
 
     # прочее
     dp.register_message_handler(greeting, commands=["start"])
