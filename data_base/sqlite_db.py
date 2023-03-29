@@ -10,7 +10,7 @@ def sql_start():
     if base:
         print('Users data base connected OK.')
     base.execute('CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, usd TEXT, rub TEXT, usdt TEXT, ton TEXT, btc TEXT, eth TEXT, bnb TEXT, busd TEXT, usdc TEXT)')
-    base.execute('CREATE TABLE IF NOT EXISTS deals(id TEXT PRIMARY KEY, description TEXT, val TEXT, price TEXT, founder TEXT, buyer TEXT, login TEXT, password TEXT, datetime TEXT, isstartet TEXT)')
+    base.execute('CREATE TABLE IF NOT EXISTS deals(id TEXT PRIMARY KEY, description TEXT, val TEXT, price TEXT, cite TEXT, founder TEXT, buyer TEXT, login TEXT, password TEXT, datetime TEXT, isstartet TEXT)')
     base.commit()
 
 
@@ -23,7 +23,7 @@ async def sql_add_deal_command(state, message, dt):
     id = message.from_user.id
     id_of_deal = str(id) + str(dt)
     buyer = 0
-    cur.execute(f'INSERT INTO deals VALUES ({id_of_deal}, ?, ?, ?, {id}, {str(buyer)}, ?, ?, {str(dt)}, {"False"})', tuple(state.values()))
+    cur.execute(f'INSERT INTO deals VALUES ({id_of_deal}, ?, ?, ?, ?, {id}, {str(buyer)}, ?, ?, {str(dt)}, {"False"})', tuple(state.values()))
     base.commit()
 
 
@@ -32,20 +32,16 @@ async def sql_get_balance(message):
         await bot.send_message(message.from_user.id, f"Пользователь: \n{message.from_user.username} [{message.from_user.id}]\n\nБаланс:\nUSD: {ret[1]}\nRUB: {ret[2]}\nUSDT: {ret[3]}\nTON: {ret[4]}\nBTC: {ret[5]}\nETH: {ret[6]}\nBNB:{ret[7]}\nBUSD: {ret[8]}\nUSDC: {ret[9]}")
 
 
-async def sql_get_deal(message, id, data, state):
+async def sql_get_deal(message, id):
     for ret in cur.execute(f'SELECT * FROM deals WHERE id == {id} AND isstartet == {str(0)}').fetchall():
         cur_state = ''
-        if ret[9] == "0":
+        if ret[10] == "0":
             cur_state = 'Сделка еще не начата'
         else:
             cur_state = "Сделка была начата"
-        time = f'{ret[8][:2]}:{ret[8][2:4]} {ret[8][4:6]}.{ret[8][6:8]}.{ret[8][8:]}'
-        await bot.send_message(message.from_user.id, f"Сделка [{id}]\nСоздатель: {ret[4]}\n\nОписание: {ret[1]}\nЦена: {ret[3]} {ret[2]}\nВремя создание сделки: {time}\nСостояние сделки: {cur_state}")
+        time = f'{ret[9][:2]}:{ret[9][2:4]} {ret[9][4:6]}.{ret[9][6:8]}.{ret[9][8:]}'
+        await bot.send_message(message.from_user.id, f"Сделка [{id}]\nСоздатель: {ret[5]}\n\nОписание: {ret[1]}\nЦена: {ret[3]} {ret[2]}\nСайт: {ret[4]}\nВремя создание сделки: {time}\nСостояние сделки: {cur_state}")
         await message.reply("Войти в сделку?\nВведите ДА или НЕТ")
-    else:
-        async with state.proxy() as data:
-            data["is_end"] = True
-        await bot.send_message(message.from_user.id, "Доступных сделок нет :(\n\nСоздать свою сделку вы можете используя команду /Создать_сделку")
 
 
 async def start_deal(message, id):
@@ -68,11 +64,18 @@ async def start_deal(message, id):
     cur.execute(f'UPDATE deals SET buyer = {message.from_user.id} WHERE id == {id}')
     cur.execute(f'UPDATE deals SET datetime = {dt} WHERE id == {id}')
     cur.execute(f'UPDATE deals SET isstartet = {isstartet} WHERE id == {id}')
-    # for ret in cur.execute(f'SELECT * FROM deals WHERE id == {id}').fetchall():
-    #     last_amount = ''
-    #     for ret1 in cur.execute(f"SELECT {ret[2]} FROM users WHERE id == {id}").fetchall():
-    #         last_amount = ret1[0]
-    #     cur.execute(f'UPDATE users SET {ret[2]} = {str(float(last_amount) + float(amount))} WHERE id == {id}')
+    for ret in cur.execute(f'SELECT * FROM deals WHERE id == {id}').fetchall():
+        last_amount = ''
+        for ret1 in cur.execute(f"SELECT {ret[2]} FROM users WHERE id == {ret[5]}").fetchall():
+            last_amount = ret1[0]
+        cur.execute(f'UPDATE users SET {ret[2]} = {str(float(last_amount) + float(ret[3]))} WHERE id == {ret[5]}')
+
+    for ret in cur.execute(f'SELECT * FROM deals WHERE id == {id}').fetchall():
+        last_amount = ''
+        for ret1 in cur.execute(f"SELECT {ret[2]} FROM users WHERE id == {ret[6]}").fetchall():
+            last_amount = ret1[0]
+        cur.execute(f'UPDATE users SET {ret[2]} = {str(float(last_amount) - float(ret[3]))} WHERE id == {ret[6]}')
+
     base.commit()
 
 

@@ -12,6 +12,7 @@ class FSMMakeDeal(StatesGroup):
     des = State()
     val = State()
     price = State()
+    cite = State()
     login = State()
     password = State()
 
@@ -49,6 +50,13 @@ async def set_val(message: types.Message, state: FSMContext):
 async def set_price(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['Price'] = message.text
+    await FSMMakeDeal.next()
+    await message.reply("Введите сайт продаваемого аккаунта\nНапример, gumtree.com.au")
+
+
+async def set_cite(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['Cite'] = message.text
     await FSMMakeDeal.next()
     await message.reply("Введите логин продаваемого аккаунта")
 
@@ -101,7 +109,7 @@ async def set_id_of_deal(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['is_end'] = False
         data['id_of_deal'] = message.text
-    await sqlite_db.sql_get_deal(message, data['id_of_deal'], data, state)
+    await sqlite_db.sql_get_deal(message, data['id_of_deal'])
     await FSMEnterDeal.next()
 
 
@@ -184,6 +192,7 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(set_des, state=FSMMakeDeal.des)
     dp.register_message_handler(set_val, state=FSMMakeDeal.val)
     dp.register_message_handler(set_price, state=FSMMakeDeal.price)
+    dp.register_message_handler(set_cite, state=FSMMakeDeal.cite)
     dp.register_message_handler(set_login, state=FSMMakeDeal.login)
     dp.register_message_handler(set_password, state=FSMMakeDeal.password)
 
