@@ -99,10 +99,10 @@ async def start_enter(message: types.Message):
 
 async def set_id_of_deal(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
+        data['is_end'] = False
         data['id_of_deal'] = message.text
-    await sqlite_db.sql_get_deal(message, data['id_of_deal'])
+    await sqlite_db.sql_get_deal(message, data['id_of_deal'], data, state)
     await FSMEnterDeal.next()
-    await message.reply("Войти в сделку?\nВведите ДА или НЕТ")
 
 
 # @dp.message_handler(state=FSMMakeDeal.des)
@@ -110,10 +110,14 @@ async def set_agree(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['agree'] = message.text
 
-    if data['agree'].lower() == 'нет':
+    if data['is_end']:
+        await state.finish()
+    elif data['agree'].lower() == 'нет':
         await message.reply("Сделка была отменена")
     else:
         await sqlite_db.start_deal(message, data['id_of_deal'])
+        await message.reply('Сделка была успешно начата!')
+        await bot.send_message(message.from_user.id, 'Вы можете проверить аккаунт:\n\nЛогин:\nПароль:\n\nВ случае возникновения трудностей вы можете втечении 15 минут отправить жалобу и сделка будет рассмотрена администраторами')
 
     await state.finish()
 
