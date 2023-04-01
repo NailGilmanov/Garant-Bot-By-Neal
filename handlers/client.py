@@ -42,9 +42,13 @@ async def set_des(message: types.Message, state: FSMContext):
 
 async def set_val(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        data['Valute'] = message.text
-    await FSMMakeDeal.next()
-    await message.reply("Введите цену\nНапример, 100")
+        data['Valute'] = message.text.lower()
+    if data['Valute'] not in ["usd", "rub", "usdt", "ton", "btc", "eth", "bnb", "busd", "usdc"]:
+        await message.reply('Выбрана неверная валюта.\n')
+        await state.finish()
+    else:
+        await FSMMakeDeal.next()
+        await message.reply("Введите цену\nНапример, 100")
 
 
 async def set_price(message: types.Message, state: FSMContext):
@@ -87,7 +91,7 @@ async def set_password(message: types.Message, state: FSMContext):
     dt = f'{hour}{minute}{day}{month}{curr.year}'
 
     async with state.proxy() as data:
-        await message.reply(f'Сделка [{str(message.from_user.id) + str(dt)}] успешно создана!\nПередайте покупателю ID сделки для завершения операции')
+        await message.reply(f'Сделка [{str(message.from_user.id)[0:4] + str(dt)}] успешно создана!\nПередайте покупателю ID сделки для завершения операции')
 
     await sqlite_db.sql_add_deal_command(data, message, dt)
 
@@ -124,8 +128,6 @@ async def set_agree(message: types.Message, state: FSMContext):
         await message.reply("Сделка была отменена")
     else:
         await sqlite_db.start_deal(message, data['id_of_deal'])
-        await message.reply('Сделка была успешно начата!')
-        await bot.send_message(message.from_user.id, 'Вы можете проверить аккаунт:\n\nЛогин:\nПароль:\n\nВ случае возникновения трудностей вы можете втечении 15 минут отправить жалобу и сделка будет рассмотрена администраторами')
 
     await state.finish()
 
@@ -179,8 +181,12 @@ async def price(message: types.Message):
 async def faq(message: types.Message):
     await bot.send_message(
         message.from_user.id,
-        "Инструкция как пользоваться ботом: \n\nЕсли у вас остались вопросы пишите мне: @absoluteriki"
+        "Инструкция как пользоваться ботом: \n\nЕсли у вас остались вопросы пишите мне: @AOS_quartz"
     )
+
+
+async def info_about_deals(message: types.Message):
+    await sqlite_db.sql_check_deals(message)
 
 
 def register_handlers_client(dp: Dispatcher):
@@ -205,5 +211,6 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(greeting, commands=["start"])
     dp.register_message_handler(price, commands=["Стоимость_услуг"])
     dp.register_message_handler(faq, commands=["Помощь(FAQ)"])
+    dp.register_message_handler(info_about_deals, commands=["Статистика_сделок"])
 
     dp.register_message_handler(check_balance, commands=["Баланс"])
