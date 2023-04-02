@@ -26,10 +26,10 @@ class FSMRemoveSum(StatesGroup):
 
 # Получение ID модераторов
 # @dp.message_handler(commands=['moderator'], is_chat_admin=True)
-async def make_changes_command(message: types.Message):
-    global IDS
-    open("admins.txt", 'w').write(str(message.from_user.id))
-    await message.reply(f"Админ добавлен \nТекущий список админов: {IDS}")
+# async def make_changes_command(message: types.Message):
+#     global IDS
+#     open("admins.txt", 'w').write(str(message.from_user.id))
+#     await message.reply(f"Админ добавлен \nТекущий список админов: {IDS}")
 
 
 #@dp.message_handler(commands='Добавить_сумму', state=None)
@@ -149,4 +149,4 @@ def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(get_val_to_remove, state=FSMRemoveSum.val)
     dp.register_message_handler(get_amount_to_remove, state=FSMRemoveSum.amount)
 
-    dp.register_message_handler(make_changes_command, commands=['moderator'])
+    # dp.register_message_handler(make_changes_command, commands=['moderator'])
