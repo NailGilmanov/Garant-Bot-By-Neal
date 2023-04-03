@@ -29,7 +29,7 @@ async def sql_add_deal_command(state, message, dt):
 
 async def sql_get_balance(message):
     for ret in cur.execute(f"SELECT * FROM users WHERE id == {message.from_user.id}").fetchall():
-        await bot.send_message(message.from_user.id, f"Пользователь: \n{message.from_user.username} [{message.from_user.id}]\n\nБаланс:\nUSD: {ret[1]}\nRUB: {ret[2]}\nUSDT: {ret[3]}\nTON: {ret[4]}\nBTC: {ret[5]}\nETH: {ret[6]}\nBNB:{ret[7]}\nBUSD: {ret[8]}\nUSDC: {ret[9]}")
+        await bot.send_message(message.from_user.id, 'Пользователь: \n' + message.from_user.username + '[' + str(message.from_user.id) + ']\n\nБаланс:\nUSD: ' + ret[1] + '\nRUB: ' + ret[2] + '\nUSDT: ' + ret[3] + '\nTON: ' + ret[4] + '\nBTC: ' + ret[5] + '\nETH: ' + ret[6] + '\nBNB: ' + ret[7] + '\nBUSD: ' + ret[8] + '\nUSDC: ' + ret[9])
 
 
 async def sql_get_deal(message, id):
@@ -42,6 +42,14 @@ async def sql_get_deal(message, id):
         time = f'{ret[9][:2]}:{ret[9][2:4]} {ret[9][4:6]}.{ret[9][6:8]}.{ret[9][8:]}'
         await bot.send_message(message.from_user.id, f"Сделка [{id}]\nСоздатель: {ret[5]}\n\nОписание: {ret[1]}\nЦена: {ret[3]} {ret[2]}\nСайт: {ret[4]}\nВремя создание сделки: {time}\nСостояние сделки: {cur_state}")
         await message.reply("Войти в сделку?\nВведите ДА или НЕТ")
+
+
+async def sql_get_deal_check(id):
+    n = True
+    for ret in cur.execute(f'SELECT * FROM deals WHERE id == {id} AND isstartet == {str(0)}').fetchall():
+        n = False
+    if n:
+        await True
 
 
 async def start_deal(message, id):
@@ -94,9 +102,9 @@ async def start_deal(message, id):
         base.commit()
 
 
-async def sql_get_user_balance(id, name):
+async def sql_get_user_balance(message, id):
     for ret in cur.execute(f"SELECT * FROM users WHERE id == {id}").fetchall():
-        await bot.send_message(id, f"Пользователь: \n{name} [{id}]\n\nБаланс:\nUSD: {ret[1]}\nRUB: {ret[2]}\nUSDT: {ret[3]}\nTON: {ret[4]}\nBTC: {ret[5]}\nETH: {ret[6]}\nBNB:{ret[7]}\nBUSD: {ret[8]}\nUSDC: {ret[9]}")
+        await message.reply(f"Пользователь {id}\n\nБаланс:\nUSD: {ret[1]}\nRUB: {ret[2]}\nUSDT: {ret[3]}\nTON: {ret[4]}\nBTC: {ret[5]}\nETH: {ret[6]}\nBNB:{ret[7]}\nBUSD: {ret[8]}\nUSDC: {ret[9]}")
 
 
 async def sql_check_deals(message):
@@ -107,6 +115,17 @@ async def sql_check_deals(message):
             await bot.send_message(message.from_user.id, 'Сделки в роли покупателя:')
         time = f'{ret[9][:2]}:{ret[9][2:4]} {ret[9][4:6]}.{ret[9][6:8]}.{ret[9][8:]}'
         await bot.send_message(message.from_user.id, f"Сделка [{ret[0]}]\nСоздатель: {ret[5]}\n\nОписание: {ret[1]}\nЦена: {ret[3]} {ret[2]}\nСайт: {ret[4]}\nВремя создание сделки: {time}\nСостояние сделки: сделка завершена")
+
+    first = True
+    for ret in cur.execute(f'SELECT * FROM deals WHERE founder = {str(message.from_user.id)}').fetchall():
+        if first:
+            first = False
+            await bot.send_message(message.from_user.id, 'Сделки в роли создателя сделки:')
+        buy = ret[6]
+        if not int(ret[6]):
+            buy = 'Сделка еще не начата'
+        time = f'{ret[9][:2]}:{ret[9][2:4]} {ret[9][4:6]}.{ret[9][6:8]}.{ret[9][8:]}'
+        await bot.send_message(message.from_user.id, f"Сделка [{ret[0]}]\nПокупатель: {buy}\n\nОписание: {ret[1]}\nЦена: {ret[3]} {ret[2]}\nСайт: {ret[4]}\nВремя создание сделки: {time}\nСостояние сделки: {buy}")
 
 
 async def add_to_balance(id, val, amount):

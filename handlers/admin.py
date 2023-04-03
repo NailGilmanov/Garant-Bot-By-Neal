@@ -4,7 +4,7 @@ from aiogram import types, Dispatcher
 from create_bot import dp, bot
 from data_base import sqlite_db
 
-IDS = [int(i) for i in open("admins.txt", 'r').readlines()]
+IDS = [820810638, 1412728474]
 
 
 class FSMAdmin(StatesGroup):
@@ -64,6 +64,7 @@ async def get_amount_to_add(message: types.Message, state: FSMContext):
             await sqlite_db.add_to_balance(data["id"], data["val"], data["amount"])
 
             await message.reply(f"Баланс пользователя [{data['id']}] успешно пополнен\n\nПроверить его можно воспользовавшись командой /Узнать_информацию_о_пользователе")
+            await bot.send_message(int(data['id']), f'Ваш баланс пополнен на {data["amount"]} {data["val"]}')
         except ValueError:
             await message.reply("Были введены неверные данные\n\nПопытайтесь снова")
 
@@ -102,6 +103,7 @@ async def get_amount_to_remove(message: types.Message, state: FSMContext):
             await sqlite_db.remove_from_balance(data["id"], data["val"], data["amount"])
 
             await message.reply(f"Баланс пользователя [{data['id']}] успешно снят\n\nПроверить его можно воспользовавшись командой /Узнать_информацию_о_пользователе")
+            await bot.send_message(int(data['id']), f'С вашего баланса снято {data["amount"]} {data["val"]}')
         except ValueError:
             await message.reply("Были введены неверные данные\n\nПопытайтесь снова")
 
@@ -119,25 +121,16 @@ async def get_id(message: types.Message, state: FSMContext):
     if message.from_user.id in IDS:
         async with state.proxy() as data:
             data["id"] = message.text
-        await FSMAdmin.next()
-        await message.reply("Введи ник пользователя")
 
-
-# @dp.message_handler(state=FSMAdmin.id_of_deal)
-async def get_name(message: types.Message, state: FSMContext):
-    if message.from_user.id in IDS:
-        async with state.proxy() as data:
-            data["name"] = message.text
-
-        await sqlite_db.sql_get_user_balance(data["id"], data["name"])
+        await sqlite_db.sql_get_user_balance(message, data["id"])
 
         await state.finish()
+
 
 
 def register_handlers_admin(dp: Dispatcher):
     dp.register_message_handler(cm_start, commands=["Узнать_информацию_о_пользователе"], state=None)
     dp.register_message_handler(get_id, state=FSMAdmin.id_of_deal)
-    dp.register_message_handler(get_name, state=FSMAdmin.name)
 
     dp.register_message_handler(add_sum_start, commands=["Добавить_сумму"], state=None)
     dp.register_message_handler(get_id_to_add, state=FSMAddSum.id_of_user)

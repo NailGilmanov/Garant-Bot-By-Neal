@@ -1,9 +1,10 @@
 import logging
 from create_bot import dp
-from aiogram import executor
+from aiogram import Bot, executor
 from data_base import sqlite_db
 
 from handlers import client, admin, other
+
 
 async def on_startup(_):
     print('Бот вышел в онлайн')

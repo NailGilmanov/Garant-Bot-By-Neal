@@ -113,8 +113,12 @@ async def set_id_of_deal(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['is_end'] = False
         data['id_of_deal'] = message.text
-    await sqlite_db.sql_get_deal(message, data['id_of_deal'])
-    await FSMEnterDeal.next()
+    try:
+        await sqlite_db.sql_get_deal(message, data['id_of_deal'])
+        await FSMEnterDeal.next()
+    except:
+        await message.reply("Введен неверный ID сделки")
+        await state.finish()
 
 
 # @dp.message_handler(state=FSMMakeDeal.des)
@@ -181,7 +185,7 @@ async def price(message: types.Message):
 async def faq(message: types.Message):
     await bot.send_message(
         message.from_user.id,
-        "Инструкция как пользоваться ботом: \n\nЕсли у вас остались вопросы пишите мне: @AOS_quartz"
+        "Инструкция как пользоваться ботом:\n1. Вы создаете заявку на покупку\n2. Вводите id человека с кем будет заключена сделка\n3. Вносите оплату\n4. Бот проверяет товар на валидность\n5. После обмена на рассмотрение жалоб уделяется 15 минут \n\nПосле этого бот и админы не несут ответственности за качество товара \n\nЕсли у вас остались вопросы пишите мне: @AOS_quartz"
     )
 
 
