@@ -8,6 +8,29 @@ import sqlite3 as sq
 from datetime import datetime
 
 
+class FSMMakeAppeal(StatesGroup):
+    id_of_deal = State()
+    comment = State()
+
+
+async def start_appeal(message: types.Message):
+    await FSMMakeAppeal.id_of_deal.set()
+    await message.reply('Введи ID сделки')
+
+
+async def load_id_of_deal(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['ID'] = message.text
+    await FSMMakeAppeal.next()
+    await message.reply('Напишите ваш комментарий')
+
+
+async def load_comment(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['comment'] = message.text
+    await state.finish()
+
+
 class FSMMakeDeal(StatesGroup):
     des = State()
     val = State()
@@ -210,6 +233,11 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(start_enter, commands=["Войти_в_сделку"], state=None)
     dp.register_message_handler(set_id_of_deal, state=FSMEnterDeal.id_of_deal)
     dp.register_message_handler(set_agree, state=FSMEnterDeal.agree)
+
+    # вход в услугу
+    dp.register_message_handler(start_appeal, commands=["Отправить_жалобу"], state=None)
+    dp.register_message_handler(load_id_of_deal, state=FSMMakeAppeal.id_of_deal)
+    dp.register_message_handler(load_comment, state=FSMMakeAppeal.comment)
 
     # прочее
     dp.register_message_handler(greeting, commands=["start"])
