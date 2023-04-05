@@ -3,6 +3,9 @@ import sqlite3 as sq
 from create_bot import bot
 
 
+# IDS = [820810638, 1412728474]
+IDS = [820810638]
+
 def sql_start():
     global base, cur
     base = sq.connect("users.db")
@@ -30,6 +33,28 @@ async def sql_add_deal_command(state, message, dt):
 async def sql_get_balance(message):
     for ret in cur.execute(f"SELECT * FROM users WHERE id == {message.from_user.id}").fetchall():
         await bot.send_message(message.from_user.id, 'Пользователь: \n' + message.from_user.username + '[' + str(message.from_user.id) + ']\n\nБаланс:\nUSD: ' + ret[1] + '\nRUB: ' + ret[2] + '\nUSDT: ' + ret[3] + '\nTON: ' + ret[4] + '\nBTC: ' + ret[5] + '\nETH: ' + ret[6] + '\nBNB: ' + ret[7] + '\nBUSD: ' + ret[8] + '\nUSDC: ' + ret[9])
+
+
+async def sql_add_appeal(data, message):
+    is_start = False
+    for ret in cur.execute(f'SELECT * FROM deals WHERE id == {data["ID"]}').fetchall():
+        is_start = True
+        cur_state = ''
+        if ret[10] == "0":
+            cur_state = 'Сделка еще не начата'
+        else:
+            cur_state = "Сделка была начата"
+        time = f'{ret[9][:2]}:{ret[9][2:4]} {ret[9][4:6]}.{ret[9][6:8]}.{ret[9][8:]}'
+        dt1 = datetime(int(ret[9][8:]),int(ret[9][6:8]),int(ret[9][4:6]),int(ret[9][:2]),int(ret[9][2:4]))
+        dt2 = datetime.now()
+        if (dt2 - dt1).total_seconds() < 900:
+            for ids in IDS:
+                await bot.send_message(ids, f"Жалоба:\n\nСделка [{ret[0]}]\nСоздатель: {ret[5]}\nПокупатель: {ret[6]}\n\nОписание: {ret[1]}\nЦена: {ret[3]} {ret[2]}\nСайт: {ret[4]}\nВремя создание сделки: {time}\nСостояние сделки: {cur_state}\n\nЛогин: {ret[7]}\nПароль: {ret[8]}\n\nОтправитель жалобы: {str(message.from_user.id)}\nКомментарий: {data['comment']}")
+            await bot.send_message(message.from_user.id, "Ваша жалоба успешно отправлена")
+        else:
+            await bot.send_message(message.from_user.id, "Вы не можете отправлять жалобы по сделке по истичении 15 минут")
+    if not is_start:
+        await bot.send_message(message.from_user.id, "Сделки с таким ID не существует.")
 
 
 async def sql_get_deal(message, id):

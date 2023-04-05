@@ -28,6 +28,9 @@ async def load_id_of_deal(message: types.Message, state: FSMContext):
 async def load_comment(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['comment'] = message.text
+
+    await sqlite_db.sql_add_appeal(data, message)
+
     await state.finish()
 
 
